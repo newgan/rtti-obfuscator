@@ -1,37 +1,20 @@
-#include <windows.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
 #include <random>
-#include <time.h>
-#include <cstdlib>
 #include <unordered_set>
 #include <regex>
 #include <filesystem>
-
-std::unordered_set<std::string> used_type_names;
-
-std::string get_rand_str(const int len) {
-	std::string s;
-	s.resize(len);
-
-	for (auto i = 0; i < len; ++i) {
-		// just pick a random byte
-		s[i] = rand() % 0xff;
-	}
-
-	s[len] = 0;
-
-	return s;
-}
+#include <numeric>
 
 std::unordered_set<std::string> replaced_rtti{};
 
 int main(int argc, char* argv[]) {
 	std::cout << "===== rtti obfuscator =====" << std::endl;
+	std::cout << "enter a file path: ";
 
-	srand(time(nullptr));
+	std::srand(time(0));
 
 	try {
 		// path to input binary
@@ -42,6 +25,10 @@ int main(int argc, char* argv[]) {
 		if (fs.fail()) {
 			throw std::exception("Could not open source binary");
 		}
+
+		std::cout << "enter an output path: (type 'b' to replace input path)" << std::endl;
+		std::string output_path;
+		std::cin >> output_path;
 
 		// read file contents
 		std::stringstream ss;
@@ -58,7 +45,7 @@ int main(int argc, char* argv[]) {
 		while (std::regex_search(itr, contents.end(), res, reg)) {
 			do {
 				for (auto j = res[0].first; j != res[0].second; ++j) {
-					*j = letters[rand() % 62];
+					*j = letters[std::rand() % 62];
 				}
 			} while (replaced_rtti.find(res[0]) != replaced_rtti.end());
 
@@ -69,17 +56,16 @@ int main(int argc, char* argv[]) {
 
 		// generate output path
 		std::filesystem::path p(path);
-		auto output_path = p.parent_path().string() + "\\" + p.stem().string() + p.extension().string();
+		auto final_path = !output_path.compare("b") ? p.parent_path().string() + "\\" + p.stem().string() + p.extension().string() : output_path;
 
 		// write to file
-		std::ofstream os(output_path, std::ofstream::trunc | std::ofstream::binary);
+		std::ofstream os(final_path, std::ofstream::trunc | std::ofstream::binary);
+
 		if (!os.write(contents.data(), contents.size())) {
-			throw std::exception((std::string("unable to write to file ") + output_path).c_str());
+			throw std::exception((std::string("unable to write to file ") + final_path).c_str());
 		}
 		else {
-			auto count = std::to_string(replaced_rtti.size() > 0 ? replaced_rtti.size() - 1 : 0);
-
-			std::cout << std::format("successfully obfuscated rtti information({} matches replaced). output written to ", count) << output_path << std::endl;
+			std::cout << std::format("successfully obfuscated rtti information({} matches replaced). output written to ", std::to_string(replaced_rtti.size())) << final_path << std::endl;
 			system("pause");
 		}
 	}
