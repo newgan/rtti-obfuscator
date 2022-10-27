@@ -26,7 +26,7 @@ std::string get_rand_str(const int len) {
 	return s;
 }
 
-std::unordered_set<std::string> replaced_rtti;
+std::unordered_set<std::string> replaced_rtti{};
 
 int main(int argc, char* argv[]) {
 	std::cout << "===== rtti obfuscator =====" << std::endl;
@@ -77,7 +77,9 @@ int main(int argc, char* argv[]) {
 			throw std::exception((std::string("unable to write to file ") + output_path).c_str());
 		}
 		else {
-			std::cout << "successfully obfuscated rtti information. output written to " << output_path << std::endl;
+			auto count = std::to_string(replaced_rtti.size() > 0 ? replaced_rtti.size() - 1 : 0);
+
+			std::cout << std::format("successfully obfuscated rtti information({} matches replaced). output written to ", count) << output_path << std::endl;
 			system("pause");
 		}
 	}
