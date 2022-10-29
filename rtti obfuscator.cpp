@@ -12,7 +12,7 @@ std::unordered_set<std::string> replaced_rtti{};
 
 int main(int argc, char* argv[]) {
 	std::cout << "===== rtti obfuscator =====" << std::endl;
-	std::cout << "enter a file path: ";
+	std::cout << "enter an input path: ";
 
 	std::srand(time(0));
 
@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
 			throw std::exception("Could not open source binary");
 		}
 
-		std::cout << "enter an output path: (type 'b' to replace input path)" << std::endl;
+		std::cout << "enter an output path: (type 'b' to replace input path): ";
 		std::string output_path;
 		std::cin >> output_path;
 
@@ -36,22 +36,24 @@ int main(int argc, char* argv[]) {
 		auto contents = ss.str();
 
 		std::regex reg(R"(\.(\?AV|PEAV|\?AU)(.+?)@@\0)");
-		std::match_results<std::string::iterator> res;
+		std::match_results<std::string::iterator> match;
 
 		auto itr = contents.begin();
 
-		std::string letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+		const std::string replacement_characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+		const auto length = replacement_characters.length();
 
-		while (std::regex_search(itr, contents.end(), res, reg)) {
+		while (std::regex_search(itr, contents.end(), match, reg)) {
+			//for all characters of the regex match, pick a random character to replace it with
 			do {
-				for (auto j = res[0].first; j != res[0].second; ++j) {
-					*j = letters[std::rand() % 62];
+				for (auto letter = match[0].first; letter != match[0].second; ++letter) {
+					*letter = replacement_characters[std::rand() % length];
 				}
-			} while (replaced_rtti.find(res[0]) != replaced_rtti.end());
+			} while (replaced_rtti.find(match[0]) != replaced_rtti.end()); // try again in case there's a collision
 
-			replaced_rtti.emplace(res[0]);
+			replaced_rtti.emplace(match[0]);
 
-			itr += res.position() + res.length();
+			itr += match.position() + match.length();
 		}
 
 		// generate output path
